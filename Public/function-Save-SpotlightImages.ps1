@@ -2,16 +2,8 @@
     .SYNOPSIS
         Save-SpotlightImages
     .DESCRIPTION
-        Ha minden almappából akarunk másolni, akkor jogosultság szükséges a felhasználónak aki futtatja.
-        (pl: futtathatjuk admin módban)
-
-
-        $destdir: ahova a fileok kerülnek.
-        $landscape: fekvő képek helye
-        $portrait: álló képek helye
-        $sufix: ezt a kiterjesztést kapják a fileok.
-        $excludedfiles: ezek a fileok nem kerülnek másolásra.
-
+        Save-SpotlightImages will copy the pictures from the folders which are accessile for the current user.
+        To copy from all users you need to Run As Administrator
     .PARAMETER
     .INPUTS
 
@@ -28,101 +20,91 @@ function Save-SpotlightImages {
 
     )
 
-    begin {}
+    begin { }
 
     process {
-        $sufix = ".jpg"
-        $fhash = $null
-        $newfiles = 0
+        try {
+            $extension = ".jpg"
+            $fileHash = $null
+            $newfiles = 0
 
-        # Forras mappák
-        $srcdirectories = @()
-        $sources = (Get-ChildItem c:\Users\).Name | ForEach-Object { "c:\users\$_\AppData\Local\Packages\Microsoft.Windows.ContentDeliveryManager_cw5n1h2txyewy\LocalState\Assets\" }
-        #$sources = "C:\Users\sassd\Pictures\Saved Pictures\desktop\","C:\Users\sassd\Pictures\Saved Pictures\mobile\"
-        Write-Verbose "Count of source directories: $($sources.count)"
+            # Build our input of source folders
+            $srcdirectories = @()
+            $sources = (Get-ChildItem c:\Users\).Name | ForEach-Object { "c:\users\$_\AppData\Local\Packages\Microsoft.Windows.ContentDeliveryManager_cw5n1h2txyewy\LocalState\Assets\" }
+            Write-Verbose "Count of source directories: $($sources.count)"
 
-        # Log file készítése
-        #$logfile = (split-path -parent $MyInvocation.MyCommand.Definition) + "\log\cp_log.csv"
-        $logfile = (New-TemporaryFile).fullname
-        Write-Verbose "Log file path: $logfile"
+            # A helper for image processing
+            $imagefile = New-Object -ComObject Wia.ImageFile
 
-        # Képfeldolgozáshoz
-        $imagefile = New-Object -ComObject Wia.ImageFile
-    
-        # Ha a cél mappának a végén nincs "\", akkor azt lekezeli.
-        if ("\" -ne $destdir.substring($destdir.Length - 1)) {
-            $destdir = $destdir + "\"
-        }
-
-
-        # Ha nincs log file, akkor azt létrehozza.
-        if (! (Test-Path $logfile)) {
-            New-Item $logfile -Type File -Force
-            "Date;Source file;Destination file" | Out-File $logfile
-        } else {
-            "Date;Source file;Destination file" | Out-File $logfile
-        }
-
-        # Forrás mappák keresése.
-        foreach ($source in $sources) {
-            if (Test-Path $source) {
-                [array]$srcdirectories += $source
-            }
-        }
-
-        # Cél tesztelése
-        Test-TargetFolder $destdir
-
-        # Almappák létrehozása a célon, ha szükséges
-        if (Test-Path $destdir) {
-            if ( ! (Test-Path ($destdir + $landscape))) {
-                New-Item ($destdir + $landscape) -ItemType Directory
-            }
-            if ( ! (Test-Path ($destdir + $portrait))) {
-                New-Item ($destdir + $portrait) -ItemType Directory
+            Write-Verbose "Making sure that we have an ending '\' for the destination directory"
+            if ("\" -ne $destdir.substring($destdir.Length - 1)) {
+                $destdir = $destdir + "\"
             }
 
-        }
 
-        # Új fileok keresése és másolása a forrás oldalról.
-        foreach ($srcdir in $srcdirectories) {
-            Write-Verbose "Getting files from $srcdir"
-            $srcfiles = Get-ChildItem $srcdir -Recurse
-            Write-Verbose "File count: $($srcfiles.count)"
-
-            foreach ($file in $srcfiles) {
-                Write-Verbose "$($file.name)"
-                if ($excludedfiles -notcontains $file) {
-                    #Write-Warning "$($srcdir + $file)"
-
-                    try {
-                        $imagefile.loadfile($file.fullname)
-                        if ($imagefile.height -eq 1080 -or $imagefile.width -eq 1080) {
-                            if ($imagefile.height -gt $imagefile.width) {
-                                $destinationdir = ($destdir + ($portrait + "\").replace('\\', '\'))
-                            }
-                            else {
-                                $destinationdir = ($destdir + ($landscape + "\").replace('\\', '\'))
-                            }
-                            $fhash = Get-FileHash -Path ($srcdir + $file) -Algorithm SHA256
-                            if (! (Test-Path ($destinationdir + $fhash.hash + $sufix))) {
-                                $newfiles += 1
-                                Copy-Item ($srcdir + $file) ($destinationdir + $fhash.hash + $sufix)
-                                "$(Get-Date -Format yyyy-MM-dd) $(Get-Date -Format HH:mm:ss);$srcdir$file;$destinationdir$($fhash.Hash)$sufix" | Out-File $logfile -Append
-                            }
-                        }
-                    }
-                    catch { }
+            Write-Verbose "Validate the source directories"
+            foreach ($source in $sources) {
+                if (Test-Path $source) {
+                    [array]$srcdirectories += $source
                 }
             }
-        }
+            Write-Verbose "Count of source directories after validation: $($srcdirectories.count)"
 
-        # Beírja a logba, ha nincs új file a forráson.
-        if ($newfiles -eq 0) {
-            "$(Get-Date -Format yyyy-MM-dd) $(Get-Date -Format HH:mm:ss);No new file on source.;" | Out-File $logfile -Append
-            Write-Warning "There was no new file."
-        } else {
-            Write-Warning "We copied $newfiles new files :)"
+            Write-Verbose "Validation of destination folder"
+            Test-TargetFolder $destdir
+
+            Write-Verbose "Ensure we have subfolders for the different picture orientations"
+            if (Test-Path $destdir) {
+                if ( ! (Test-Path ($destdir + $landscape))) {
+                    New-Item ($destdir + $landscape) -ItemType Directory
+                }
+                if ( ! (Test-Path ($destdir + $portrait))) {
+                    New-Item ($destdir + $portrait) -ItemType Directory
+                }
+
+            }
+
+            Write-Verbose "Look for new files in the source direcorties"
+            foreach ($srcdir in $srcdirectories) {
+                Write-Verbose "Getting files from $srcdir"
+                $srcfiles = Get-ChildItem $srcdir -Recurse
+                Write-Verbose "File count: $($srcfiles.count)"
+
+                foreach ($file in $srcfiles) {
+                    Write-Debug "$($file.name)"
+                    if ($excludedfiles -notcontains $file) {
+
+                        try {
+                            $imagefile.loadfile($file.fullname)
+                            if ($imagefile.height -eq 1080 -or $imagefile.width -eq 1080) {
+                                if ($imagefile.height -gt $imagefile.width) {
+                                    $destinationdir = ($destdir + ($portrait + "\").replace('\\', '\'))
+                                }
+                                else {
+                                    $destinationdir = ($destdir + ($landscape + "\").replace('\\', '\'))
+                                }
+                                $fileHash = Get-FileHash -Path ($srcdir + $file) -Algorithm SHA256
+                                if (! (Test-Path ($destinationdir + $fileHash.hash + $extension))) {
+                                    $newfiles += 1
+                                    Copy-Item ($srcdir + $file) ($destinationdir + $fileHash.hash + $extension)
+                                }
+                            }
+                        }
+                        catch { }
+                    }
+                }
+            }
+
+            # Some verbose reporting
+            if ($newfiles -eq 0) {
+                Write-Verbose "There was no new file."
+            }
+            else {
+                Write-Verbose "We copied $newfiles new files :)"
+            }
+        }
+        catch {
+            Write-Warning "Something was wrong: $_"
         }
     }
 
