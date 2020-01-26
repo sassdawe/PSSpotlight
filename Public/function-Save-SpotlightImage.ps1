@@ -91,7 +91,7 @@ function Save-SpotlightImage {
                                 }
                             }
                         }
-                        catch { 
+                        catch {
                             throw "Something went wrong: $_"
                         }
                     }
