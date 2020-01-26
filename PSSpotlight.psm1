@@ -35,7 +35,7 @@ $null = $landscape,$portrait,$excludedfiles
 
 # TODO: load the private and public cmdlets into session
 	$moduleRoot = (split-path -parent $MyInvocation.MyCommand.Definition)
-	. "$moduleRoot\Public\function-Save-SpotlightImages.ps1"
+	. "$moduleRoot\Public\function-Save-SpotlightImage.ps1"
 	. "$moduleRoot\Public\function-Show-SpotlightConfig.ps1"
 	. "$moduleRoot\Private\function-Test-TargetFolder.ps1"
 

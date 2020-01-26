@@ -35,5 +35,4 @@ InModuleScope -ModuleName "PSSpotlight" {
             Show-SpotlightConfig
         }
     }
-    
 }

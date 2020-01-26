@@ -1,8 +1,8 @@
 ﻿<#
     .SYNOPSIS
-        Save-SpotlightImages
+        Save-SpotlightImage
     .DESCRIPTION
-        Save-SpotlightImages will copy the pictures from the folders which are accessile for the current user.
+        Save-SpotlightImage will copy the pictures from the folders which are accessile for the current user.
         To copy from all users you need to Run As Administrator
     .PARAMETER
     .INPUTS
@@ -12,10 +12,11 @@
     .NOTES
 
     .EXAMPLE
-        Save-SpotlightImages
+        Save-SpotlightImage
 #>
-function Save-SpotlightImages {
+function Save-SpotlightImage {
     [CmdletBinding()]
+    [Alias("Copy-SpotlightImage")]
     param (
 
     )
@@ -90,7 +91,9 @@ function Save-SpotlightImages {
                                 }
                             }
                         }
-                        catch { }
+                        catch { 
+                            throw "Something went wrong: $_"
+                        }
                     }
                 }
             }
