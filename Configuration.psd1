@@ -1,5 +1,6 @@
 @{
     landscape = "landscape";
-    portrait = 'portrait';
+    portrait = "portrait";
+    foldername = "SpotlightPictures";
     destination = $null
 }

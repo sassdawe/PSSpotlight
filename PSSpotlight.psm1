@@ -1,24 +1,19 @@
 
-# TODO: create private variables
-
-# TODO: store the location in environment variable
-# TODO: consider multiple destinations?
-
-# FIXME: not everyone has consumer OneDrive on their machines
-# FIXME: localozation of folder names
-Write-Verbose "setting the destination"
-$script:destdir = "C:\Users\$($(whoami).split("\")[1])\OneDrive\K$([char]233)pek\SpotlightPictures"
-
-Write-Host "Destination direcotry $destdir"
-
-$z = Get-ConfigurationPath
-Write-Warning $z
-
 # folder names for orientation
 $script:Config = Import-Configuration
 $script:landscape = $config."landscape"
-Write-Warning $config."landscape"
 $script:portrait = $config."portrait"
+$script:destdir = $config."destination"
+$ConfigurationPath = Get-ConfigurationPath
+
+if ($null -eq $config.destination) {
+	$script:destdir = "$([Environment]::GetFolderPath('MyPictures'))\$($config.foldername)"
+	Write-Warning "For the first use, we set the default destination to `'$destdir`'`n`tYou can change it in $ConfigurationPath"
+	$config.destination = $destdir
+	$config | Export-Configuration
+} else {
+	Write-Warning "Destination directory is $destdir"
+}
 
 # TODO: store the exlusions in an editable file
 # FIXME: probably we don't want to overwrite the exlusions with an update, we have to handle keeping customizations
