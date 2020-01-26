@@ -14,22 +14,21 @@ function Test-TargetFolder {
         [string]
         $destdir
     )
-    if (! (Test-Path $destdir)) {
-        $Timeout = 30
-        Write-Host "Waiting for target: " -ForegroundColor Red -NoNewline
-        Write-Host $destdir -ForegroundColor Yellow
-        while (! (Test-Path $destdir) -and $Timeout -gt 0 ) {
-            Write-Host -nonewline "." -ForegroundColor Yellow
-            Start-Sleep 1
-            $Timeout--
+    begin { }
+    process {
+        try {
+            if (! (Test-Path $destdir)) {
+                Write-Warning "The $destdir folder doesn't exist. Do you want as to create it or update the config at $ConfigurationPath?"
+                New-Item -Path $destdir -ItemType Directory -Confirm:$true -Force -ErrorAction Stop
+            }
+        } catch {
+            Write-Warning "Something was wrong: $_"
         }
-        Write-Host ""
-        Write-Host "Target available: "-ForegroundColor Green -NoNewline
-        Write-Host "$destdir "-ForegroundColor Yellow
+    }
+    end {
+        if (! (Test-Path $destdir)) {
+            Throw "Destination directory is missing!"
+        }
+    }
 
-    }
-    if (! (Test-Path $destdir)) {
-        "$(Get-Date -Format yyyy-MM-dd) $(Get-Date -Format HH:mm:ss);;Destiantion directory not available!" | Out-File $logfile -Append
-        Break
-    }
 }
