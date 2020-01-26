@@ -2,21 +2,28 @@
 # TODO: create private variables
 
 # TODO: store the location in environment variable
+# TODO: consider multiple destinations?
+
 # FIXME: not everyone has consumer OneDrive on their machines
+# FIXME: localozation of folder names
 Write-Verbose "setting the destination"
-$destdir = "C:\Users\$($(whoami).split("\")[1])\OneDrive\K$([char]233)pek\SpotlightPictures"
+$script:destdir = "C:\Users\$($(whoami).split("\")[1])\OneDrive\K$([char]233)pek\SpotlightPictures"
 
 Write-Host "Destination direcotry $destdir"
 
+$z = Get-ConfigurationPath
+Write-Warning $z
+
 # folder names for orientation
-$landscape = "landscape"
-$portrait = "portrait"
+$script:Config = Import-Configuration
+$script:landscape = $config."landscape"
+Write-Warning $config."landscape"
+$script:portrait = $config."portrait"
 
 # TODO: store the exlusions in an editable file
 # FIXME: probably we don't want to overwrite the exlusions with an update, we have to handle keeping customizations
 Write-Verbose "files to exclude because Windows stores others files in the folder"
-$excludedfiles = (
-	
+$script:excludedfiles = (
 	"337cb3c65f221b47d09e214b1500c8cfc72b74bf7c871e8bb93e8b1d9f65ea5d",
 	"40a9f755206f42ff800e649e294e5bb0ce1e0abd55a01171e2159803624d9366",
 	"6fb41239c1eb8f5a05ed496cc2945b6b05e90f22c3f74ec6e0b8b30154d5e199",
@@ -32,5 +39,9 @@ $excludedfiles = (
 $null = $landscape,$portrait,$excludedfiles
 
 # TODO: load the private and public cmdlets into session
-# TODO: create module manifest file
-# TODO: export public functions
+	$moduleRoot = (split-path -parent $MyInvocation.MyCommand.Definition)
+	. "$moduleRoot\Public\function-Save-SpotlightImages.ps1"
+	. "$moduleRoot\Public\function-Show-SpotlightConfig.ps1"
+	. "$moduleRoot\Private\function-Test-TargetFolder.ps1"
+
+# FIXME: tests, lots of unit tests using PESTER

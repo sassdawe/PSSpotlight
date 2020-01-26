@@ -1,8 +1,6 @@
-﻿#requires -version 5
-<#
+﻿<#
     .SYNOPSIS
-        A Windows 10 Spotlight képeinek másolása egy másik mappába file kiterjesztéssel.
-        Minden anyagot elmásol a c:\users megfelelő almappáiból
+        Save-SpotlightImages
     .DESCRIPTION
         Ha minden almappából akarunk másolni, akkor jogosultság szükséges a felhasználónak aki futtatja.
         (pl: futtathatjuk admin módban)
@@ -30,12 +28,9 @@ function Save-SpotlightImages {
 
     )
 
-    begin {
-        #Konfigurációs állomány betöltése
-        # . .\config.ps1
-        . ((split-path -parent $MyInvocation.MyCommand.Definition) + "\config.ps1")
+    begin {}
 
-
+    process {
         $sufix = ".jpg"
         $fhash = $null
         $newfiles = 0
@@ -44,15 +39,16 @@ function Save-SpotlightImages {
         $srcdirectories = @()
         $sources = (Get-ChildItem c:\Users\).Name | ForEach-Object { "c:\users\$_\AppData\Local\Packages\Microsoft.Windows.ContentDeliveryManager_cw5n1h2txyewy\LocalState\Assets\" }
         #$sources = "C:\Users\sassd\Pictures\Saved Pictures\desktop\","C:\Users\sassd\Pictures\Saved Pictures\mobile\"
+        Write-Verbose "Count of source directories: $($sources.count)"
 
         # Log file készítése
-        $logfile = (split-path -parent $MyInvocation.MyCommand.Definition) + "\log\cp_log.csv"
+        #$logfile = (split-path -parent $MyInvocation.MyCommand.Definition) + "\log\cp_log.csv"
+        $logfile = (New-TemporaryFile).fullname
+        Write-Verbose "Log file path: $logfile"
 
         # Képfeldolgozáshoz
         $imagefile = New-Object -ComObject Wia.ImageFile
-    }
-
-    process {
+    
         # Ha a cél mappának a végén nincs "\", akkor azt lekezeli.
         if ("\" -ne $destdir.substring($destdir.Length - 1)) {
             $destdir = $destdir + "\"
@@ -63,17 +59,19 @@ function Save-SpotlightImages {
         if (! (Test-Path $logfile)) {
             New-Item $logfile -Type File -Force
             "Date;Source file;Destination file" | Out-File $logfile
+        } else {
+            "Date;Source file;Destination file" | Out-File $logfile
         }
 
         # Forrás mappák keresése.
         foreach ($source in $sources) {
             if (Test-Path $source) {
-                $srcdirectories += $source
+                [array]$srcdirectories += $source
             }
         }
 
         # Cél tesztelése
-        Test-TargetFolder
+        Test-TargetFolder $destdir
 
         # Almappák létrehozása a célon, ha szükséges
         if (Test-Path $destdir) {
@@ -88,10 +86,12 @@ function Save-SpotlightImages {
 
         # Új fileok keresése és másolása a forrás oldalról.
         foreach ($srcdir in $srcdirectories) {
+            Write-Verbose "Getting files from $srcdir"
             $srcfiles = Get-ChildItem $srcdir -Recurse
-
+            Write-Verbose "File count: $($srcfiles.count)"
 
             foreach ($file in $srcfiles) {
+                Write-Verbose "$($file.name)"
                 if ($excludedfiles -notcontains $file) {
                     #Write-Warning "$($srcdir + $file)"
 
@@ -120,6 +120,9 @@ function Save-SpotlightImages {
         # Beírja a logba, ha nincs új file a forráson.
         if ($newfiles -eq 0) {
             "$(Get-Date -Format yyyy-MM-dd) $(Get-Date -Format HH:mm:ss);No new file on source.;" | Out-File $logfile -Append
+            Write-Warning "There was no new file."
+        } else {
+            Write-Warning "We copied $newfiles new files :)"
         }
     }
 
