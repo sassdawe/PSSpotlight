@@ -4,7 +4,7 @@ $script:Config = Import-Configuration
 $script:landscape = $config."landscape"
 $script:portrait = $config."portrait"
 $script:destdir = $config."destination"
-$ConfigurationPath = Get-ConfigurationPath
+$script:ConfigurationPath = Get-ConfigurationPath
 
 if ($null -eq $config.destination) {
 	$script:destdir = "$([Environment]::GetFolderPath('MyPictures'))\$($config.foldername)"
