@@ -10,9 +10,16 @@
     .OUTPUTS
 
     .NOTES
-
+        Save-SpotlightImage will only process those folder which are accessible for the user.
+        If executed from an elevated PowerShell session, Save-SpotlightImage will copy from all users' folders.
     .EXAMPLE
         Save-SpotlightImage
+
+        Will save the new spotlight images to the configured folder.
+    .EXAMPLE
+        Save-SpotlightImage -Verbose
+
+        Will save the new spotlight images to the configured folder with a little bit of logging.
 #>
 function Save-SpotlightImage {
     [CmdletBinding()]
@@ -45,7 +52,7 @@ function Save-SpotlightImage {
 
             Write-Verbose "Validate the source directories"
             foreach ($source in $sources) {
-                if (Test-Path $source) {
+                if (Test-Path -Path $source -ErrorAction SilentlyContinue) {
                     [array]$srcdirectories += $source
                 }
             }
@@ -56,11 +63,11 @@ function Save-SpotlightImage {
 
             Write-Verbose "Ensure we have subfolders for the different picture orientations"
             if (Test-Path $destdir) {
-                if ( ! (Test-Path ($destdir + $landscape))) {
-                    New-Item ($destdir + $landscape) -ItemType Directory
+                if ( -not (Test-Path -Path $($destdir + $landscape))) {
+                    New-Item -Path $($destdir + $landscape) -ItemType Directory
                 }
-                if ( ! (Test-Path ($destdir + $portrait))) {
-                    New-Item ($destdir + $portrait) -ItemType Directory
+                if ( -not (Test-Path -Path $($destdir + $portrait))) {
+                    New-Item -Path $($destdir + $portrait) -ItemType Directory
                 }
 
             }
@@ -84,10 +91,14 @@ function Save-SpotlightImage {
                                 else {
                                     $destinationdir = ($destdir + ($landscape + "\").replace('\\', '\'))
                                 }
-                                $fileHash = Get-FileHash -Path ($srcdir + $file) -Algorithm SHA256
-                                if (! (Test-Path ($destinationdir + $fileHash.hash + $extension))) {
-                                    $newfiles += 1
-                                    Copy-Item ($srcdir + $file) ($destinationdir + $fileHash.hash + $extension)
+                                $fileHash = Get-FileHash -Path $($srcdir + $file.Name) -Algorithm SHA256
+                                if (-not (Test-Path -Path $($destinationdir + $fileHash.hash + $extension))) {
+                                    try {
+                                        Copy-Item -Path $($srcdir + $file.Name) -Destination $($destinationdir + $fileHash.hash + $extension) -Force -ErrorAction Stop
+                                        $newfiles += 1
+                                    } catch {
+                                        Write-Warning "Failed to copy $($srcdir + $file.Name)"
+                                    }
                                 }
                             }
                         }
