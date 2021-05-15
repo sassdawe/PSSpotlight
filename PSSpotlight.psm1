@@ -37,6 +37,7 @@ $null = $landscape,$portrait,$excludedfiles
 	$moduleRoot = (split-path -parent $MyInvocation.MyCommand.Definition)
 	. "$moduleRoot\Public\function-Save-SpotlightImage.ps1"
 	. "$moduleRoot\Public\function-Show-SpotlightConfig.ps1"
+	. "$moduleRoot\Public\function-Get-SpotlightConfig.ps1"
 	. "$moduleRoot\Private\function-Test-TargetFolder.ps1"
 
 # FIXME: tests, lots of unit tests using PESTER
