@@ -11,6 +11,7 @@ function Get-SpotlightConfig {
             Will print to the console the current location of the cofiguration file
     #>
     [CmdletBinding()]
+    [OutputType([System.String])]
     param (
     )
     begin {
